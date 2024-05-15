@@ -1,42 +1,65 @@
-import { ID_CONTENT } from "./Constans";
-import { ID_PARENT_VIEW } from "./Constans";
-class RouteManager {
-    static inTransition = false
+import { ID_CONTENT } from "./Constans"
+import { Animator } from "./Animator"
 
-    static NavigateTo(/*classView*/) {
+ class RouteManager {
+    static inTransition = false
+    static ContentApp =  document.getElementById(ID_CONTENT)
+    
+
+    static NavigateTo(classView, history = true) {
         console.log("NavigateTo");
         if (RouteManager.inTransition) {
             return
         } {
             RouteManager.inTransition = true
         }
+        
+        const currentContentView = RouteManager.ContentApp.firstElementChild;
+        console.log(currentContentView)
+        console.log(classView)
 
-        //const newContentView = classView.buildView()
-        const newContentView = /*html*/ `<div >NUevo Conten2</div>`
-        //const currentContentView = document.getElementById(ID_PARENT_VIEW);
-        const content = document.getElementById(ID_CONTENT);
-        const currentContentView = content.firstElementChild;
-        console.log(currentContentView);
-        const newContentViewObject = new DOMParser().parseFromString(newContentView, "text/html").body.firstElementChild
+        const newContentViewObject =  (typeof classView === 'string') ? window[classView].buildView() :classView.buildView()
 
-        currentContentView.style.transition = 'all 0.5s ease-in-out'
-        newContentViewObject.style.transition = 'all 0.5s ease-in-out'
+        Animator.setOutElementAnimation(currentContentView)
+        Animator.setInElementAnimation(newContentViewObject)
 
         currentContentView.addEventListener('transitionend', function (event) {
-            console.log("TRANSIION TERMINADA INICIO");
             if (event.propertyName === 'opacity' && this.style.opacity == '0') {
-                console.log("TRANSIION TERMINADA");
                 newContentViewObject.style.opacity = '0'
-                content.innerHTML = '';
-                content.append(newContentViewObject)
+                newContentViewObject.style.transform = 'translateX(-20px)'
+                RouteManager.ContentApp.innerHTML = ''
+                RouteManager.ContentApp.append(newContentViewObject)
                 newContentViewObject.style.opacity = '1'
+                newContentViewObject.style.transform = 'translateX(0px)';
+                if (history) {
+                    ManagerHistory.pushState(classView.name);
+                }
                 RouteManager.inTransition = false
             }
         });
 
         currentContentView.style.opacity = '0'
-        currentContentView.style.opacity = '0'
-    }
+        currentContentView.style.transform = 'translateX(20px)'
 
+    }
 }
+
 window.RouteManager = RouteManager;
+
+
+
+class ManagerHistory {
+    static pushState (state) {
+        console.log(state)
+        const stateId =  (typeof state === 'string') ? window[state].name : state.name
+        history.pushState({pageId:  stateId} , null, '')
+    }
+}
+
+window.onpopstate = function(event) {
+    if (event.state.pageId != null) {
+        RouteManager.NavigateTo(event.state.pageId, false)
+    }
+}
+
+window.ManagerHistory = ManagerHistory;
